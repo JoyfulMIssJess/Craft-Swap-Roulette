@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5eadc">
+<title>Sunday Craft Roulette</title>
+<style>
+:root{--ink:#503b2d;--muted:#806b5a;--cream:#fbf6ef;--rose:#d98f83;--sage:#a7b49a;--gold:#e6bd72;--plum:#927b9f}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(135deg,#f8eee4,#f5f1e8 55%,#edf0e7);color:var(--ink);font-family:Georgia,"Times New Roman",serif;min-height:100vh}
+main{max-width:850px;margin:0 auto;padding:28px 18px 44px}
+header{text-align:center;margin-bottom:18px}
+.eyebrow{font:700 11px/1.4 system-ui,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(36px,8vw,60px);line-height:1;margin:10px 0;color:#684b38}
+.sub{font:15px/1.5 system-ui,sans-serif;color:var(--muted);margin:0 auto;max-width:520px}
+.panel{background:rgba(255,255,255,.78);border:1px solid #e7d9ca;border-radius:24px;padding:clamp(16px,4vw,28px);box-shadow:0 12px 35px #6d503014}
+.wheel-wrap{position:relative;width:min(100%,480px);margin:4px auto 18px}
+.pointer{position:absolute;z-index:3;top:-8px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:17px solid transparent;border-right:17px solid transparent;border-top:32px solid #684b38;filter:drop-shadow(0 2px 2px #0002)}
+canvas{display:block;width:100%;height:auto;filter:drop-shadow(0 9px 12px #59402b22)}
+.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+button{border:0;border-radius:999px;padding:14px 23px;font:700 14px system-ui,sans-serif;cursor:pointer;transition:transform .15s,opacity .15s}
+button:hover{transform:translateY(-1px)}button:disabled{opacity:.55;cursor:wait}
+.primary{background:#76533c;color:white;box-shadow:0 5px 0 #543a2a}
+.secondary{background:#eee4d9;color:#634b39}
+.result{display:none;text-align:center;margin:22px auto 0;padding:20px;border-radius:18px;background:#f8efe5;border:1px solid #e7d9ca;max-width:560px}
+.result.show{display:block;animation:pop .35s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.result .emoji{font-size:42px}
+.result h2{font-size:clamp(25px,5vw,36px);margin:6px 0 4px}
+.result p{font:13px system-ui,sans-serif;color:var(--muted);margin:0 0 14px}
+.link{display:inline-block;background:#71836a;color:white;text-decoration:none;padding:12px 18px;border-radius:999px;font:700 13px system-ui,sans-serif}
+.meta{text-align:center;color:var(--muted);font:12px system-ui,sans-serif;margin-top:16px}
+details{margin-top:20px;border-top:1px solid #eadfd3;padding-top:15px}
+summary{cursor:pointer;font:700 13px system-ui,sans-serif;color:#684b38}
+.list{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+.chip{background:#f2e9df;border-radius:999px;padding:7px 10px;font:12px system-ui,sans-serif;color:#6b5544}
+footer{text-align:center;color:#8a7768;font:12px system-ui,sans-serif;margin-top:20px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+<header>
+<div class="eyebrow">A little creativity, a little chaos</div>
+<h1>Sunday Craft Roulette</h1>
+<p class="sub">Let the craft gods choose your next little project. Spin, see what you get, and follow the tutorial link!</p>
+</header>
+<section class="panel">
+<div class="wheel-wrap">
+<div class="pointer"></div>
+<canvas id="wheel" width="900" height="900" aria-label="Wheel of craft ideas"></canvas>
+</div>
+<div class="controls">
+<button class="primary" id="spin">🎡 Pick my craft!</button>
+<button class="secondary" id="again">Clear result</button>
+</div>
+<div class="result" id="result" aria-live="polite">
+<div class="emoji" id="emoji"></div>
+<h2 id="craftName"></h2>
+<p id="category"></p>
+<a class="link" id="tutorial" target="_blank" rel="noopener">Open craft tutorial ↗</a>
+</div>
+<div class="meta">22 ideas • beginner-friendly inspiration • no craft degree required</div>
+<details>
+<summary>See all the craft possibilities</summary>
+<div class="list" id="craftList"></div>
+</details>
+</section>
+<footer>Made for friends, snacks, and Sunday crafting ♡</footer>
+</main>
+<script>
+const crafts = [
+{name:"Freezer Jam",cat:"Kitchen creations",emoji:"🍓",url:"https://www.google.com/search?q=easy+beginner+freezer+jam+recipe"},
+{name:"Cranberry Sauce",cat:"Kitchen creations",emoji:"🍒",url:"https://www.google.com/search?q=easy+homemade+cranberry+sauce+recipe"},
+{name:"Bookmarks",cat:"Handmade goodies",emoji:"📚",url:"https://www.google.com/search?q=easy+DIY+handmade+bookmarks+tutorial"},
+{name:"Small Plants",cat:"Pamper & plant",emoji:"🪴",url:"https://www.google.com/search?q=DIY+mini+planters+plant+propagation+gift+tutorial"},
+{name:"Felt Christmas Ornaments",cat:"Handmade goodies",emoji:"🎄",url:"https://www.google.com/search?q=easy+beginner+felt+Christmas+ornaments+tutorial"},
+{name:"Mini Loaf Quick Breads",cat:"Kitchen creations",emoji:"🍞",url:"https://www.google.com/search?q=easy+mini+loaf+quick+bread+recipes"},
+{name:"Muffins",cat:"Kitchen creations",emoji:"🧁",url:"https://www.google.com/search?q=easy+homemade+muffin+recipes+beginner"},
+{name:"Salsa",cat:"Kitchen creations",emoji:"🌶️",url:"https://tastesbetterfromscratch.com/homemade-salsa/"},
+{name:"Flower Bouquets",cat:"Pamper & plant",emoji:"💐",url:"https://www.google.com/search?q=DIY+budget+friendly+flower+bouquet+arranging+tutorial"},
+{name:"Bath Salts",cat:"Pamper & plant",emoji:"🛁",url:"https://www.google.com/search?q=easy+DIY+homemade+bath+salts+recipe"},
+{name:"Sugar Scrub",cat:"Pamper & plant",emoji:"🧴",url:"https://www.google.com/search?q=easy+DIY+sugar+scrub+recipe"},
+{name:"Marinara Sauce",cat:"Kitchen creations",emoji:"🍅",url:"https://www.google.com/search?q=easy+homemade+marinara+sauce+recipe"},
+{name:"Painted Hairbrushes",cat:"Handmade goodies",emoji:"🖌️",url:"https://www.google.com/search?q=DIY+painted+hairbrush+customize+tutorial"},
+{name:"Keychains",cat:"Handmade goodies",emoji:"🔑",url:"https://www.google.com/search?q=easy+DIY+keychains+beginner+tutorial"},
+{name:"Christmas Ornaments",cat:"Handmade goodies",emoji:"🎁",url:"https://www.google.com/search?q=easy+DIY+homemade+Christmas+ornaments+tutorial"},
+{name:"Pickles",cat:"Kitchen creations",emoji:"🥒",url:"https://www.google.com/search?q=easy+refrigerator+pickle+recipe+beginner"},
+{name:"Pickled Onions",cat:"Kitchen creations",emoji:"🧅",url:"https://www.google.com/search?q=quick+pickled+red+onions+easy+recipe"},
+{name:"Compound Butter",cat:"Kitchen creations",emoji:"🧈",url:"https://www.google.com/search?q=easy+homemade+compound+butter+flavours+recipe"},
+{name:"Painted Mugs / Thrifted Holiday Mugs",cat:"Handmade goodies",emoji:"☕",url:"https://www.google.com/search?q=DIY+painted+thrifted+mugs+food+safe+paint+tutorial"},
+{name:"Candy Bags",cat:"Kitchen creations",emoji:"🍬",url:"https://www.google.com/search?q=DIY+homemade+candy+gift+bags+easy"},
+{name:"Cookies",cat:"Kitchen creations",emoji:"🍪",url:"https://www.google.com/search?q=easy+homemade+cookies+gift+recipes"}
+];
+const canvas=document.getElementById('wheel'),ctx=canvas.getContext('2d'),spinBtn=document.getElementById('spin');
+const colors=['#d99588','#a9b69d','#e7c47c','#a998b5','#e7aa77','#8eaeb0','#c8a1a1'];
+const n=crafts.length,arc=2*Math.PI/n,center=450,radius=425;
+let rotation=0,busy=false,lastIndex=-1;
+function draw(){
+ ctx.clearRect(0,0,900,900);
+ crafts.forEach((c,i)=>{
+  const start=rotation+i*arc-Math.PI/2;
+  ctx.beginPath();ctx.moveTo(center,center);ctx.arc(center,center,radius,start,start+arc);ctx.closePath();
+  ctx.fillStyle=colors[i%colors.length];ctx.fill();
+  ctx.strokeStyle='#fffaf3';ctx.lineWidth=5;ctx.stroke();
+  ctx.save();ctx.translate(center,center);ctx.rotate(start+arc/2);
+  ctx.textAlign='right';ctx.fillStyle='#49372d';ctx.font='bold 22px system-ui, sans-serif';
+  let label=c.name;if(label.length>23)label=label.slice(0,21)+'…';
+  ctx.fillText(c.emoji+' '+label,radius-24,8);ctx.restore();
+ });
+ ctx.beginPath();ctx.arc(center,center,65,0,2*Math.PI);ctx.fillStyle='#fffaf3';ctx.fill();ctx.lineWidth=8;ctx.strokeStyle='#76533c';ctx.stroke();
+ ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 27px Georgia';ctx.fillStyle='#684b38';ctx.fillText('SPIN',center,center);
+}
+function showResult(i){
+ const c=crafts[i];document.getElementById('emoji').textContent=c.emoji;
+ document.getElementById('craftName').textContent=c.name;
+ document.getElementById('category').textContent=c.cat;
+ const a=document.getElementById('tutorial');a.href=c.url;
+ document.getElementById('result').classList.add('show');
+}
+function spin(){
+ if(busy)return;busy=true;spinBtn.disabled=true;
+ document.getElementById('result').classList.remove('show');
+ let choices=crafts.map((_,i)=>i).filter(i=>i!==lastIndex);
+ const winner=choices[Math.floor(Math.random()*choices.length)];
+ const target=((2*Math.PI-(winner+.5)*arc)%(2*Math.PI));
+ const current=((rotation%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+ const delta=(target-current+2*Math.PI)%(2*Math.PI);
+ const total=delta+Math.PI*2*(5+Math.floor(Math.random()*3));
+ const start=rotation,duration=4300,begin=performance.now();
+ function frame(now){
+  const t=Math.min(1,(now-begin)/duration),ease=1-Math.pow(1-t,4);
+  rotation=start+total*ease;draw();
+  if(t<1)requestAnimationFrame(frame);
+  else{rotation=target;draw();lastIndex=winner;showResult(winner);busy=false;spinBtn.disabled=false;}
+ }
+ requestAnimationFrame(frame);
+}
+spinBtn.addEventListener('click',spin);
+document.getElementById('again').addEventListener('click',()=>document.getElementById('result').classList.remove('show'));
+document.getElementById('craftList').innerHTML=crafts.map(c=>`<span class="chip">${c.emoji} ${c.name}</span>`).join('');
+draw();
+</script>
+</body>
+</html>
